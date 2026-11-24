@@ -1,0 +1,78 @@
+version: 2
+
+models:
+  - name: dim_zones
+    description: "Dimensión de zonas de taxi."
+    columns:
+      - name: zone_id
+        data_tests: [unique, not_null]
+
+  - name: dim_date
+    description: "Dimensión calendario generada con date_spine."
+    columns:
+      - name: date_day
+        data_tests: [unique, not_null]
+
+  - name: fct_trips
+    description: "Hechos de viajes (grain: 1 viaje). Incremental."
+    columns:
+      - name: trip_id
+        data_tests: [unique, not_null]
+      - name: pickup_date
+        data_tests:
+          - relationships:
+              arguments:
+                to: ref('dim_date')
+                field: date_day
+      - name: pickup_zone_id
+        data_tests:
+          - relationships:
+              arguments:
+                to: ref('dim_zones')
+                field: zone_id
+              config:
+                severity: warn
+      - name: dropoff_zone_id
+        data_tests:
+          - relationships:
+              arguments:
+                to: ref('dim_zones')
+                field: zone_id
+              config:
+                severity: warn
+      - name: total_amount
+        data_tests:
+          - dbt_utils.accepted_range:
+              arguments:
+                min_value: 0
+                inclusive: false
+      - name: trip_duration_min
+        data_tests:
+          - dbt_utils.accepted_range:
+              arguments:
+                min_value: 1
+                max_value: 180
+      - name: pickup_hour
+        data_tests:
+          - dbt_utils.accepted_range:
+              arguments:
+                min_value: 0
+                max_value: 23
+
+  - name: mart_daily_revenue
+    description: "Ingresos y KPIs diarios con media móvil de 7 días."
+    columns:
+      - name: pickup_date
+        data_tests: [unique, not_null]
+
+  - name: mart_weather_impact
+    description: "Demanda y comportamiento por categoría de clima."
+    columns:
+      - name: weather_category
+        data_tests: [unique, not_null]
+
+  - name: mart_zone_performance
+    description: "Ranking de zonas por ingresos."
+    columns:
+      - name: zone_id
+        data_tests: [unique, not_null]
